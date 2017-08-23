@@ -1,0 +1,1 @@
+cmd_/home/yanmeng/spin_lock_test/fileOutput-testcase/fileOutput1.ko := ld -EL -r  -T ./scripts/module-common.lds -T ./arch/arm64/kernel/module.lds --build-id  -o /home/yanmeng/spin_lock_test/fileOutput-testcase/fileOutput1.ko /home/yanmeng/spin_lock_test/fileOutput-testcase/fileOutput1.o /home/yanmeng/spin_lock_test/fileOutput-testcase/fileOutput1.mod.o ;  true

@@ -27,7 +27,7 @@ struct thread_data {
 
 static struct spinlock test_spinlock;
 
-static int threads_num = 8;
+static int threads_num = 60;
 module_param(threads_num, int, 0);
 
 static int threads_work_num = 10000;
@@ -181,7 +181,7 @@ repeat:
 			lock_delay / lock_num);
 */
 	proportion++;
-	if (proportion == 21) {
+	if (proportion == 41) {
 		proportion = 1;
 		test_threads++;
 
@@ -243,4 +243,5 @@ static __exit void lockbench_exit(void)
 module_init(lockbench_init);
 module_exit(lockbench_exit);
 MODULE_LICENSE("GPL");
+
 

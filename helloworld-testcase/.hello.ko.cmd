@@ -1,0 +1,1 @@
+cmd_/home/yanmeng/spin_lock_test/testcase-helloWorld/hello.ko := ld -EL -r  -T ./scripts/module-common.lds -T ./arch/arm64/kernel/module.lds --build-id  -o /home/yanmeng/spin_lock_test/testcase-helloWorld/hello.ko /home/yanmeng/spin_lock_test/testcase-helloWorld/hello.o /home/yanmeng/spin_lock_test/testcase-helloWorld/hello.mod.o ;  true
