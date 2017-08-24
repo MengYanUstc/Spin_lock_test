@@ -137,7 +137,7 @@ static int snap(void *unused)
 			if(b_pChange){
 				all_num = all_times = 0;
 				b_pChange = false;
-				mdelay(30);
+				mdelay(100);
 			}
 			
 			num = 0;
@@ -147,13 +147,13 @@ static int snap(void *unused)
 			all_num += num;
 			all_times++;
 
-			mdelay(10);
+			mdelay(25);
 		}
 
 		/* tell master to go on */
-		//complete(&snap_done);
-		//if (READ_ONCE(snap_exit))
-			//break;
+		complete(&snap_done);
+		if (READ_ONCE(snap_exit))
+			break;
 	}
 	do_exit(0);
 	return 0;
@@ -181,8 +181,9 @@ while(s_tests < max_s_tests)  {
 	
 	printk("add s_tests");
 
-do{
-	printk("add threads");
+while(test_threads < threads_num){
+	p_to_s=1;
+	
 	b_pChange = false;
 	b_coreNumChange = false;
 	reinit_completion(&threads_done);
@@ -231,15 +232,15 @@ do{
 		p_time = s_time * 1000 / p_to_s;
 		b_pChange = true;
 		
-		mdelay(200);
+		mdelay(500);
 		
 		printk("lockbench: %d %lu %lu s_tests: %d p_to_s: %d avg_cpu: %ld %ld %ld\n",
 		test_threads, s_time, p_time,
 		s_tests, p_to_s,
 		all_num, all_times, all_num * 10/all_times);
+		
 		/* print this test result */
 		p_to_s++;
-		printk("p_to_s add");
 	}
 
 	/* wait for work done */
@@ -247,7 +248,7 @@ do{
 	wait_for_completion(&threads_done);
 	
 	//printk("threads_num: %d, threads_num: %d", test_threads, threads_num);
-}while(test_threads < threads_num);
+}
 		
 
 	
