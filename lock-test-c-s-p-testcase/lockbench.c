@@ -20,21 +20,25 @@ struct thread_data {
 	int out_lock;
 };
 
-static int threads_num = 8;
+static int threads_num = 62;
 module_param(threads_num, int, 0);
-
-static int threads_work_num = 5000;
-module_param(threads_work_num, int, 0);
 
 static int test_done = 0;
 module_param(test_done, int, S_IRUGO|S_IWUSR);
 
+//s_time：serial process time
+//p_time: parallel process time
 unsigned long s_time = 0;
 unsigned long p_time =0;
-bool b_coreNumChange = false;
-bool b_pChange = false;
 
-static int c_time = 33;
+//core number change flag
+bool b_coreNumChange = false;
+//parallel process time change flag
+bool b_pChange = false;
+//monitor end flag
+bool b_monitorEnd = false;
+
+static int c_time = 20;
 module_param(c_time, int, 0);
 
 static int s_tests = 0;
@@ -44,7 +48,9 @@ static struct spinlock test_spinlock;
 
 unsigned int test_threads = 0;
 unsigned int p_to_s = 1;
-unsigned int max_p_to_s = 8;
+//the ciruclation time of p_to_s is (max_p_to_s-1)
+unsigned int max_p_to_s = 32;
+//the circulation time of s_tests is max_s_tests
 unsigned int max_s_tests = 5;
 
 static atomic_t threads_come;
@@ -120,16 +126,13 @@ static int snap(void *unused)
 	while (1) {
 		/* all threads begin */
 		if(b_coreNumChange){
-			/*if((test_threads == threads_num)&&
-			(p_to_s==max_p_to_s)&&
-			(s_tests==max_s_tests)){
+			if(b_monitorEnd){
 				printk("stop snap");
 				break;
-			}*/
-			printk("snap wati");
+			}
 			wait_for_completion(&snap_start);
 			reinit_completion(&snap_start);
-			printk("start snap");
+			printk("change thread num");
 		}
 		
 
@@ -137,7 +140,7 @@ static int snap(void *unused)
 			if(b_pChange){
 				all_num = all_times = 0;
 				b_pChange = false;
-				mdelay(30);
+				mdelay(10);
 			}
 			
 			num = 0;
@@ -147,13 +150,13 @@ static int snap(void *unused)
 			all_num += num;
 			all_times++;
 
-			mdelay(10);
+			mdelay(5);
 		}
 
 		/* tell master to go on */
-		//complete(&snap_done);
-		//if (READ_ONCE(snap_exit))
-			//break;
+		complete(&snap_done);
+		if (READ_ONCE(snap_exit))
+			break;
 	}
 	do_exit(0);
 	return 0;
@@ -170,94 +173,76 @@ static int monitor(void *unused)
 	
 	printk("monitor test start\n");
 	
-while(s_tests < max_s_tests)  {
-	//unsigned long all_work_num = threads_num * threads_work_num;
-	//unsigned long test_work_num, fact_all_work;
-	p_to_s = 1;
-	s_time = c_time * s_tests_v[s_tests];
-	p_time = s_time * 1000 / p_to_s;
+	while(s_tests < max_s_tests)  {
+		test_threads = 0;
+		while(test_threads < threads_num){
+			p_to_s=1;
+			s_time = c_time * s_tests_v[s_tests];
+			p_time = s_time * 1000 / p_to_s;
 
-	test_threads = 0;
-	
-	printk("add s_tests");
+			b_pChange = false;
+			b_coreNumChange = false;
+			reinit_completion(&threads_done);
+				
+			spin_lock_init(&test_spinlock);
+			test_threads++;
+			atomic_set(&threads_left, test_threads);
+			atomic_set(&threads_come, test_threads);
 
-do{
-	printk("add threads");
-	b_pChange = false;
-	b_coreNumChange = false;
-	reinit_completion(&threads_done);
-		
-	spin_lock_init(&test_spinlock);
-	test_threads++;
-	atomic_set(&threads_left, test_threads);
-	atomic_set(&threads_come, test_threads);
+			for (i = 0; i < test_threads; i++) {
+				td = &per_cpu(thread_datas, i);
+				td->task = kthread_create_on_node(thread_fn, td, cpu_to_node(i),
+						"lockbench-%d", i);
+				if (IS_ERR(td->task)) {
+					ret = 1;
+					atomic_set(&threads_left, i);
+					atomic_set(&threads_come, i);
+					goto error_out;
+				}
+				kthread_bind(td->task, i);
 
-	//test_work_num = all_work_num / test_threads;
-	/* all threads are of the same work_num */
-	//test_work_num = threads_work_num;
-	//fact_all_work = test_threads * test_work_num;
+				ret = sched_setscheduler(td->task, SCHED_FIFO, &param);
+				if (ret) {
+					ret = 1;
+					atomic_set(&threads_left, i + 1);
+					atomic_set(&threads_come, i + 1);
+					goto error_out;
+				}
+			}
 
-	for (i = 0; i < test_threads; i++) {
-		td = &per_cpu(thread_datas, i);
-		td->task = kthread_create_on_node(thread_fn, td, cpu_to_node(i),
-				"lockbench-%d", i);
-		if (IS_ERR(td->task)) {
-			ret = 1;
-			atomic_set(&threads_left, i);
-			atomic_set(&threads_come, i);
-			goto error_out;
+			for (i = 0; i < test_threads; i++) {
+				td = &per_cpu(thread_datas, i);
+				wake_up_process(td->task);
+			}
+			
+			/* from 1 to max*/
+			while(p_to_s<max_p_to_s) {
+				//test_threads = 0;
+				p_time = s_time * 1000 / p_to_s;
+				b_pChange = true;
+				
+				mdelay(80);
+				
+				/* print this test result */
+				printk("lockbench: %d %d %d %ld %ld %ld\n",
+				test_threads,
+				s_tests, p_to_s,
+				all_num, all_times, all_num * 10/all_times);
+				
+				p_to_s++;
+			}
+
+			/* wait for work done */
+			b_coreNumChange = true;
+			wait_for_completion(&threads_done);
+			
+			//printk("threads_num: %d, threads_num: %d", test_threads, threads_num);
 		}
-		kthread_bind(td->task, i);
-
-		//td->work_num = test_work_num;
-
-		ret = sched_setscheduler(td->task, SCHED_FIFO, &param);
-		if (ret) {
-			ret = 1;
-			atomic_set(&threads_left, i + 1);
-			atomic_set(&threads_come, i + 1);
-			goto error_out;
-		}
-	}
-
-	for (i = 0; i < test_threads; i++) {
-		td = &per_cpu(thread_datas, i);
-		wake_up_process(td->task);
+		/* from 0.05 to 1 */
+		s_tests++;
 	}
 	
-	/* from 1 to 31 */
-	while(p_to_s<8) {
-		//test_threads = 0;
-		p_time = s_time * 1000 / p_to_s;
-		b_pChange = true;
-		
-		mdelay(200);
-		
-		printk("lockbench: %d %lu %lu s_tests: %d p_to_s: %d avg_cpu: %ld %ld %ld\n",
-		test_threads, s_time, p_time,
-		s_tests, p_to_s,
-		all_num, all_times, all_num * 10/all_times);
-		/* print this test result */
-		p_to_s++;
-		printk("p_to_s add");
-	}
-
-	/* wait for work done */
-	b_coreNumChange = true;
-	wait_for_completion(&threads_done);
-	
-	//printk("threads_num: %d, threads_num: %d", test_threads, threads_num);
-}while(test_threads < threads_num);
-		
-
-	
-
-	/* we only test one s_tests once, b/c dmesg buffer small */
-	
-	/* from 0.05 to 1 */
-	s_tests++;
-}
-
+	b_monitorEnd = true;
 
 error_out:
 	if (ret) {
@@ -330,6 +315,7 @@ static int snap_cpu;
 	__module_get(THIS_MODULE);
 	wake_up_process(monitor_task);
 	//printk("wake up snap");
+	mdelay(50);
 	wake_up_process(snap_task);
 	return 0;
 }

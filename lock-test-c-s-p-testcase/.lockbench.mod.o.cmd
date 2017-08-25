@@ -1,8 +1,8 @@
-cmd_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.mod.o := gcc -Wp,-MD,/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/.lockbench_2.mod.o.d  -nostdinc -isystem /usr/lib/gcc/aarch64-linux-gnu/5/include  -I./arch/arm64/include -I./arch/arm64/include/generated/uapi -I./arch/arm64/include/generated  -I./include -I./arch/arm64/include/uapi -I./include/uapi -I./include/generated/uapi -include ./include/linux/kconfig.h -Iubuntu/include  -D__KERNEL__ -fno-pie -mlittle-endian -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -std=gnu89 -fno-PIE -fno-pie -no-pie -mgeneral-regs-only -DCONFIG_AS_LSE=1 -fno-asynchronous-unwind-tables -mpc-relative-literal-loads -fno-delete-null-pointer-checks -O2 --param=allow-store-data-races=0 -DCC_HAVE_ASM_GOTO -Wframe-larger-than=1024 -fstack-protector-strong -Wno-unused-but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -fno-var-tracking-assignments -pg -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -Werror=date-time -Werror=incompatible-pointer-types  -DKBUILD_BASENAME='"lockbench_2.mod"'  -DKBUILD_MODNAME='"lockbench_2"' -DMODULE -mcmodel=large  -c -o /home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.mod.o /home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.mod.c
+cmd_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.mod.o := gcc -Wp,-MD,/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/.lockbench.mod.o.d  -nostdinc -isystem /usr/lib/gcc/aarch64-linux-gnu/5/include  -I./arch/arm64/include -I./arch/arm64/include/generated/uapi -I./arch/arm64/include/generated  -I./include -I./arch/arm64/include/uapi -I./include/uapi -I./include/generated/uapi -include ./include/linux/kconfig.h -Iubuntu/include  -D__KERNEL__ -fno-pie -mlittle-endian -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -std=gnu89 -fno-PIE -fno-pie -no-pie -mgeneral-regs-only -DCONFIG_AS_LSE=1 -fno-asynchronous-unwind-tables -mpc-relative-literal-loads -fno-delete-null-pointer-checks -O2 --param=allow-store-data-races=0 -DCC_HAVE_ASM_GOTO -Wframe-larger-than=1024 -fstack-protector-strong -Wno-unused-but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -fno-var-tracking-assignments -pg -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -Werror=date-time -Werror=incompatible-pointer-types  -DKBUILD_BASENAME='"lockbench.mod"'  -DKBUILD_MODNAME='"lockbench"' -DMODULE -mcmodel=large  -c -o /home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.mod.o /home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.mod.c
 
-source_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.mod.o := /home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.mod.c
+source_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.mod.o := /home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.mod.c
 
-deps_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.mod.o := \
+deps_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.mod.o := \
     $(wildcard include/config/module/unload.h) \
   include/linux/module.h \
     $(wildcard include/config/modules.h) \
@@ -633,6 +633,6 @@ deps_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.mod.o := 
   include/linux/vermagic.h \
   include/generated/utsrelease.h \
 
-/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.mod.o: $(deps_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.mod.o)
+/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.mod.o: $(deps_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.mod.o)
 
-$(deps_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.mod.o):
+$(deps_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.mod.o):

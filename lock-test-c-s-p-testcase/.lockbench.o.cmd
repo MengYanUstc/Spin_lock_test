@@ -1,8 +1,8 @@
-cmd_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.o := gcc -Wp,-MD,/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/.lockbench_2.o.d  -nostdinc -isystem /usr/lib/gcc/aarch64-linux-gnu/5/include  -I./arch/arm64/include -I./arch/arm64/include/generated/uapi -I./arch/arm64/include/generated  -I./include -I./arch/arm64/include/uapi -I./include/uapi -I./include/generated/uapi -include ./include/linux/kconfig.h -Iubuntu/include  -D__KERNEL__ -fno-pie -mlittle-endian -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -std=gnu89 -fno-PIE -fno-pie -no-pie -mgeneral-regs-only -DCONFIG_AS_LSE=1 -fno-asynchronous-unwind-tables -mpc-relative-literal-loads -fno-delete-null-pointer-checks -O2 --param=allow-store-data-races=0 -DCC_HAVE_ASM_GOTO -Wframe-larger-than=1024 -fstack-protector-strong -Wno-unused-but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -fno-var-tracking-assignments -pg -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -Werror=date-time -Werror=incompatible-pointer-types  -DMODULE -mcmodel=large  -DKBUILD_BASENAME='"lockbench_2"'  -DKBUILD_MODNAME='"lockbench_2"' -c -o /home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.o /home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.c
+cmd_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.o := gcc -Wp,-MD,/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/.lockbench.o.d  -nostdinc -isystem /usr/lib/gcc/aarch64-linux-gnu/5/include  -I./arch/arm64/include -I./arch/arm64/include/generated/uapi -I./arch/arm64/include/generated  -I./include -I./arch/arm64/include/uapi -I./include/uapi -I./include/generated/uapi -include ./include/linux/kconfig.h -Iubuntu/include  -D__KERNEL__ -fno-pie -mlittle-endian -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs -fno-strict-aliasing -fno-common -Werror-implicit-function-declaration -Wno-format-security -std=gnu89 -fno-PIE -fno-pie -no-pie -mgeneral-regs-only -DCONFIG_AS_LSE=1 -fno-asynchronous-unwind-tables -mpc-relative-literal-loads -fno-delete-null-pointer-checks -O2 --param=allow-store-data-races=0 -DCC_HAVE_ASM_GOTO -Wframe-larger-than=1024 -fstack-protector-strong -Wno-unused-but-set-variable -fno-omit-frame-pointer -fno-optimize-sibling-calls -fno-var-tracking-assignments -pg -Wdeclaration-after-statement -Wno-pointer-sign -fno-strict-overflow -fconserve-stack -Werror=implicit-int -Werror=strict-prototypes -Werror=date-time -Werror=incompatible-pointer-types  -DMODULE -mcmodel=large  -DKBUILD_BASENAME='"lockbench"'  -DKBUILD_MODNAME='"lockbench"' -c -o /home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.o /home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.c
 
-source_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.o := /home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.c
+source_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.o := /home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.c
 
-deps_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.o := \
+deps_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.o := \
   include/linux/init.h \
     $(wildcard include/config/debug/rodata.h) \
     $(wildcard include/config/debug/set/module/ronx.h) \
@@ -663,6 +663,6 @@ deps_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.o := \
   include/linux/static_key.h \
   include/trace/define_trace.h \
 
-/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.o: $(deps_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.o)
+/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.o: $(deps_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.o)
 
-$(deps_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench_2.o):
+$(deps_/home/yanmeng/spin_lock_test/lock-test-c-s-p-testcase/lockbench.o):

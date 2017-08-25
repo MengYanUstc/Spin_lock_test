@@ -1,9 +1,9 @@
 CFLAGS_lockbench_trace.o = -I$(src)
 
 ifneq ($(KERNELRELEASE),)
-#	obj-m := lockbench.o
+	obj-m := lockbench.o
 #	obj-m += lockbench_1.o
-	obj-m := lockbench_2.o
+#	obj-m := lockbench_2.o
 else
 	KERNELDIR ?= /lib/modules/`uname -r`/build
 	#KERNELDIR ?= /home/zhouchengming/sailingos #/lib/modules/`uname -r`/build
