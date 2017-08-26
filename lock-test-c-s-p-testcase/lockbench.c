@@ -20,8 +20,21 @@ struct thread_data {
 	int out_lock;
 };
 
-static int threads_num = 62;
+static int threads_num = 10;
 module_param(threads_num, int, 0);
+
+static int c_time = 20;
+module_param(c_time, int, 0);
+
+static int s_tests = 0;
+module_param(s_tests, int, S_IRUGO|S_IWUSR);
+
+unsigned int test_threads = 0;
+unsigned int p_to_s = 1;
+//the ciruclation time of p_to_s is (max_p_to_s-1)
+unsigned int max_p_to_s = 10;
+//the circulation time of s_tests is max_s_tests
+unsigned int max_s_tests = 5;
 
 static int test_done = 0;
 module_param(test_done, int, S_IRUGO|S_IWUSR);
@@ -38,20 +51,7 @@ bool b_pChange = false;
 //monitor end flag
 bool b_monitorEnd = false;
 
-static int c_time = 20;
-module_param(c_time, int, 0);
-
-static int s_tests = 0;
-module_param(s_tests, int, S_IRUGO|S_IWUSR);
-
 static struct spinlock test_spinlock;
-
-unsigned int test_threads = 0;
-unsigned int p_to_s = 1;
-//the ciruclation time of p_to_s is (max_p_to_s-1)
-unsigned int max_p_to_s = 32;
-//the circulation time of s_tests is max_s_tests
-unsigned int max_s_tests = 5;
 
 static atomic_t threads_come;
 static atomic_t threads_left;
@@ -126,7 +126,9 @@ static int snap(void *unused)
 	while (1) {
 		/* all threads begin */
 		if(b_coreNumChange){
-			if(b_monitorEnd){
+			if((s_tests==max_s_tests-1)&&
+			(p_to_s==max_p_to_s)&&
+			(test_threads==threads_num)){
 				printk("stop snap");
 				break;
 			}
@@ -242,7 +244,7 @@ static int monitor(void *unused)
 		s_tests++;
 	}
 	
-	b_monitorEnd = true;
+	
 
 error_out:
 	if (ret) {
