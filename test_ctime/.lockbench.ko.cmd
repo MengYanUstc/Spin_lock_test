@@ -1,0 +1,1 @@
+cmd_/home/yanmeng/spin_lock_test/test_ctime/lockbench.ko := ld -EL -r  -T ./scripts/module-common.lds -T ./arch/arm64/kernel/module.lds --build-id  -o /home/yanmeng/spin_lock_test/test_ctime/lockbench.ko /home/yanmeng/spin_lock_test/test_ctime/lockbench.o /home/yanmeng/spin_lock_test/test_ctime/lockbench.mod.o ;  true

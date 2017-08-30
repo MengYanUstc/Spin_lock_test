@@ -20,7 +20,7 @@ struct thread_data {
 	int out_lock;
 };
 
-static int threads_num = 10;
+static int threads_num = 62;
 module_param(threads_num, int, 0);
 
 static int c_time = 20;
@@ -32,7 +32,7 @@ module_param(s_tests, int, S_IRUGO|S_IWUSR);
 unsigned int test_threads = 0;
 unsigned int p_to_s = 1;
 //the ciruclation time of p_to_s is (max_p_to_s-1)
-unsigned int max_p_to_s = 10;
+unsigned int max_p_to_s = 32;
 //the circulation time of s_tests is max_s_tests
 unsigned int max_s_tests = 5;
 
@@ -43,6 +43,7 @@ module_param(test_done, int, S_IRUGO|S_IWUSR);
 //p_time: parallel process time
 unsigned long s_time = 0;
 unsigned long p_time =0;
+unsigned long spin_time = 0;
 
 //core number change flag
 bool b_coreNumChange = false;
@@ -137,12 +138,14 @@ static int snap(void *unused)
 			printk("change thread num");
 		}
 		
-
+		unsigned long snap_wait_time = spin_time * 5 / 1000;
+		
 		while (!READ_ONCE(snap_over)) {
 			if(b_pChange){
 				all_num = all_times = 0;
 				b_pChange = false;
-				mdelay(10);
+				snap_wait_time = spin_time * 5 / 1000;
+				mdelay(1);
 			}
 			
 			num = 0;
@@ -151,8 +154,9 @@ static int snap(void *unused)
 					num++;
 			all_num += num;
 			all_times++;
-
-			mdelay(5);
+			
+			
+			mdelay(2);
 		}
 
 		/* tell master to go on */
@@ -181,6 +185,7 @@ static int monitor(void *unused)
 			p_to_s=1;
 			s_time = c_time * s_tests_v[s_tests];
 			p_time = s_time * 1000 / p_to_s;
+			spin_time = s_time+p_time;
 
 			b_pChange = false;
 			b_coreNumChange = false;
@@ -221,9 +226,13 @@ static int monitor(void *unused)
 			while(p_to_s<max_p_to_s) {
 				//test_threads = 0;
 				p_time = s_time * 1000 / p_to_s;
+				spin_time = p_time + s_time;
+				//wait time unit is us, wait 100 circulation time of spin
+				unsigned long monitor_wait_time = spin_time * 100/1000;
+				
 				b_pChange = true;
 				
-				mdelay(80);
+				mdelay(40);
 				
 				/* print this test result */
 				printk("lockbench: %d %d %d %ld %ld %ld\n",
