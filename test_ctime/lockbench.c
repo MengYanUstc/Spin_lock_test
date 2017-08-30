@@ -19,18 +19,20 @@ struct thread_data {
 
 static struct spinlock test_spinlock;
 
-unsigned int test_threads = 1;
-static int threads_num = 16;
+unsigned int test_threads = 0;
+static int threads_num = 63;
 module_param(threads_num, int, 0);
 
 struct timeval ts_1;
 struct timeval ts_2;
 unsigned long success_count = 0;
-bool b_ts2Change = false;
+unsigned long max_success_count = 10000000;
+static atomic_t b_ts2Change;
+bool b_threadComplete = false;
 
 
 static atomic_t threads_left;
-//static atomic_t threads_come;
+static atomic_t threads_come;
 //static DECLARE_COMPLETION(snap_start);
 static DECLARE_COMPLETION(threads_done);
 //bool b_waitFlag = true;
@@ -68,22 +70,26 @@ static int thread_fn(void *arg)
 	}
 	printk("%ld, %d", j, b_waitFlag);
 	*/
+	if (atomic_dec_and_test(&threads_come)) {
+		printk("last thread enter");
+	}
+	success_count = 0;
 	
 	do_gettimeofday(&ts_1);
 	while (1) {
 		spin_lock(&test_spinlock);
-		spin_unlock(&test_spinlock);
 		success_count++;
-		if(success_count>10000000)
+		spin_unlock(&test_spinlock);
+		if(success_count>max_success_count)
 			break;
 	}
 	
 	//printk("4");
-	if(!b_ts2Change){
-		b_ts2Change = true;
+	if(atomic_dec_and_test(&b_ts2Change)){
 		do_gettimeofday(&ts_2);
 		printk("cores: %d start: %ld %ld end: %ld %ld count: %ld", test_threads, ts_1.tv_sec, ts_1.tv_usec, ts_2.tv_sec, ts_2.tv_usec, success_count);
 	}
+
 	
 	//printk("5");
 	
@@ -97,12 +103,52 @@ static int thread_fn(void *arg)
 	return 0;
 }
 
+
+/*static int snap(void *unused)
+{
+	int i;
+	unsigned int num;
+	
+	
+	wait_for_completion(&snap_start);
+	do_gettimeofday(&ts_1);
+	
+	printk("start snap");
+	
+	
+	
+	while (1) {
+		
+		if(b_threadComplete){
+			if(test_threads==threads_num){
+				printk("stop snap");
+				break;
+			}
+			
+			printk("change thread num");
+			wait_for_completion(&snap_start);
+			reinit_completion(&snap_start);
+
+			do_gettimeofday(&ts_1);
+		}
+
+		
+		complete(&snap_done);
+		if (READ_ONCE(snap_exit))
+			break;
+	}
+	do_exit(0);
+	return 0;
+}*/
+
+
 static int monitor(void *unused)
 {
+	
 	struct thread_data *td;
 	int ret = 0, i, have_one_thread = 0;
 	struct sched_param param = {.sched_priority = 1};
-
+	printk("start monitor");
 repeat:
 	//reinit_completion(&snap_start);
 	reinit_completion(&threads_done);
@@ -113,10 +159,8 @@ repeat:
 	success_count = 0;
 	
 	atomic_set(&threads_left, test_threads);
-	//atomic_set(&threads_come, test_threads);
-	
-	
-	b_ts2Change = false;
+	atomic_set(&threads_come, test_threads);
+	atomic_set(&b_ts2Change, 1);
 	//printk("1");
 	for (i = 0; i < test_threads; i++) {
 		td = &per_cpu(thread_datas, i);
@@ -151,11 +195,13 @@ repeat:
 	//b_waitFlag=false;
 	//printk("wait flag change %d",b_waitFlag);
 	/* print this test result */
+	
 	wait_for_completion(&threads_done);
 
-	if (test_threads <= threads_num)
+	if (test_threads < threads_num)
 		goto repeat;
-
+	
+	printk("end monitor\n");
 error_out:
 	if (ret) {
 		printk("lockbench: test failed\n");
