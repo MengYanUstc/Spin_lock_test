@@ -10,6 +10,7 @@
 #include <linux/jiffies.h>
 #include <linux/percpu.h>
 #include <linux/kallsyms.h>
+#include <linux/percpu_counter.h>
 #include <asm/delay.h>
 
 struct thread_data {
@@ -19,21 +20,23 @@ struct thread_data {
 
 static struct spinlock test_spinlock;
 
-unsigned int test_threads = 1;
-static int threads_num = 8;
+unsigned int test_threads = 0;
+static int threads_num = 5;
 module_param(threads_num, int, 0);
 
-struct timeval ts_1;
-struct timeval ts_2;
-unsigned long success_count = 0;
-bool b_ts2Change = false;
+ktime_t kt_begin_time, kt_end_time;
+unsigned long lu_begin_time, lu_end_time;
 
+static atomic_t b_ts2Change;
+
+struct percpu_counter counter_spinlock;
+long long max_spinlock_count = 10000000;
 
 static atomic_t threads_left;
 static atomic_t threads_come;
-static DECLARE_COMPLETION(snap_start);
+//static DECLARE_COMPLETION(snap_start);
 static DECLARE_COMPLETION(threads_done);
-bool b_waitFlag = true;
+//bool b_waitFlag = true;
 
 
 static int test_done = 0;
@@ -53,67 +56,122 @@ int (*sched_setscheduler_nocheck_ptr)(struct task_struct *p, int policy,
 static int thread_fn(void *arg)
 {
 	/*
+	int j = 0;
+	long int circle_max_time = 1000000;
 	if (atomic_dec_and_test(&threads_come)) {
 	
 		//printk("complete");
 		complete(&snap_start);
 	}
 	printk("3");
-	while(true){
+	
+	for(j=0;j<circle_max_time;j++){
 		if(b_waitFlag==false)
 			break;
-	}*/
-	
-	
-	do_gettimeofday(&ts_1);
+	}
+	printk("%ld, %d", j, b_waitFlag);
+	*/
+	if (atomic_dec_and_test(&threads_come)) {
+		printk("last thread enter");
+	}
+	//success_count = 0;
+	percpu_counter_set(&counter_spinlock, 0);
+	//do_gettimeofday(&ts_1);
+	kt_begin_time = ktime_get();
 	while (1) {
 		spin_lock(&test_spinlock);
+		//success_count++;
+		percpu_counter_inc(&counter_spinlock);
 		spin_unlock(&test_spinlock);
-		success_count++;
-		if(success_count>1000000)
+		if(counter_spinlock.count>max_spinlock_count)
 			break;
 	}
 	
-	printk("4");
-	if(!b_ts2Change){
-		b_ts2Change = true;
-		do_gettimeofday(&ts_2);
-		printk("cores: %d, start: %ld, end: %ld, count: %ld", test_threads, ts_1.tv_usec, ts_2.tv_usec, success_count);
+	//printk("4");
+	if(atomic_dec_and_test(&b_ts2Change)){
+		kt_end_time = ktime_get();
+		lu_begin_time = ktime_to_us(kt_begin_time);
+		lu_end_time = ktime_to_us(kt_end_time);
+		printk("cores: %d kt_start: %lu kt_end: %lu count: %lld", test_threads, lu_begin_time, lu_end_time, counter_spinlock.count);
 	}
+
 	
-	printk("5");
+	//printk("5");
 	
 	if (atomic_dec_and_test(&threads_left)) {
-		printk("6");
+		//printk("6");
 		complete(&threads_done);
 	}
 	
-	printk("7");
+	//printk("7");
 	do_exit(0);
 	return 0;
 }
 
+
+/*static int snap(void *unused)
+{
+	int i;
+	unsigned int num;
+	
+	
+	wait_for_completion(&snap_start);
+	do_gettimeofday(&ts_1);
+	
+	printk("start snap");
+	
+	
+	
+	while (1) {
+		
+		if(b_threadComplete){
+			if(test_threads==threads_num){
+				printk("stop snap");
+				break;
+			}
+			
+			printk("change thread num");
+			wait_for_completion(&snap_start);
+			reinit_completion(&snap_start);
+			do_gettimeofday(&ts_1);
+		}
+		
+		complete(&snap_done);
+		if (READ_ONCE(snap_exit))
+			break;
+	}
+	do_exit(0);
+	return 0;
+}*/
+
+
 static int monitor(void *unused)
 {
+	
 	struct thread_data *td;
 	int ret = 0, i, have_one_thread = 0;
 	struct sched_param param = {.sched_priority = 1};
-
+	printk("start monitor");
+	
+	percpu_counter_init(&counter_spinlock, 0, GFP_KERNEL);
+	if(percpu_counter_initialized(&counter_spinlock)){
+		printk("percpu counter initialized!\n");
+	}
+	
 repeat:
-	reinit_completion(&snap_start);
+	//reinit_completion(&snap_start);
 	reinit_completion(&threads_done);
-	b_waitFlag = true;
+	//b_waitFlag = true;
+	percpu_counter_set(&counter_spinlock, 0);
 	
 	spin_lock_init(&test_spinlock);
 	test_threads++;
-	success_count = 0;
+	//success_count = 0;
 	
 	atomic_set(&threads_left, test_threads);
 	atomic_set(&threads_come, test_threads);
-	
-	
-	b_ts2Change = false;
-	printk("1");
+	atomic_set(&b_ts2Change, 1);
+	//printk("1");
 	for (i = 0; i < test_threads; i++) {
 		td = &per_cpu(thread_datas, i);
 		td->task = kthread_create_on_node(thread_fn, td, cpu_to_node(i),
@@ -135,7 +193,7 @@ repeat:
 		}
 	}
 	
-	printk("2");
+	//printk("2");
 
 	for (i = 0; i < test_threads; i++) {
 		td = &per_cpu(thread_datas, i);
@@ -143,15 +201,18 @@ repeat:
 	}
 
 
-	wait_for_completion(&snap_start);
-	b_waitFlag=false;
-	printk("wait flag change");
+	//wait_for_completion(&snap_start);
+	//b_waitFlag=false;
+	//printk("wait flag change %d",b_waitFlag);
 	/* print this test result */
+	
 	wait_for_completion(&threads_done);
 
 	if (test_threads < threads_num)
 		goto repeat;
-
+	
+	percpu_counter_destroy(&counter_spinlock);
+	printk("end monitor\n");
 error_out:
 	if (ret) {
 		printk("lockbench: test failed\n");
@@ -203,4 +264,3 @@ static __exit void lockbench_exit(void)
 module_init(lockbench_init);
 module_exit(lockbench_exit);
 MODULE_LICENSE("GPL");
-
