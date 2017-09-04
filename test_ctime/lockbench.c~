@@ -18,7 +18,6 @@ struct thread_data {
 	struct task_struct *task;
 	long long max_count;
 	long long counter;
-
 };
 
 static struct spinlock test_spinlock;
@@ -34,7 +33,7 @@ long long lu_begin_count, lu_end_count;
 //static atomic_t b_ts2Change;
 
 //struct percpu_counter counter_spinlock;
-long long max_spinlock_count = 0;
+long long max_spinlock_count = 1000000;
 
 
 static atomic_t threads_left;
@@ -50,7 +49,6 @@ module_param(test_done, int, S_IRUGO|S_IWUSR);
 static struct task_struct *monitor_task;
 
 DEFINE_PER_CPU(struct thread_data, thread_datas);
-//DEFINE_PER_CPU(int, percpuCount);
 
 struct task_struct *(*kthread_create_on_cpu_ptr)(int (*threadfn)(void *data),
 		void *data, unsigned int cpu,
@@ -62,14 +60,12 @@ int (*sched_setscheduler_nocheck_ptr)(struct task_struct *p, int policy,
 static int thread_fn(void *arg)
 {
 	struct thread_data *td = (struct thread_data *)arg;
-	//printk(get_cpu_var(percpuCount));
-	long long *localCounter = &(td->counter);
-	long long *localMax = &(td->max_count);
+	
 	while (1) {
 		spin_lock(&test_spinlock);
-		(*localCounter)++;
+		td->counter++;
 		//percpu_counter_inc(&counter_spinlock);
-		if((*localCounter)>(*localMax))
+		if(td->counter>td->max_count)
 		{
 			spin_unlock(&test_spinlock);
 			break;
@@ -131,8 +127,7 @@ static int monitor(void *unused)
 	int ret = 0, i, have_one_thread = 0;
 	struct sched_param param = {.sched_priority = 1};
 	printk("start monitor");
-	max_spinlock_count = 1<<21;
-	printk("max_count: %lld", max_spinlock_count);
+	
 	
 repeat:
 	//reinit_completion(&snap_start);
@@ -163,12 +158,7 @@ repeat:
 		kthread_bind(td->task, i);
 
 		td->cpu = i;
-		if(test_threads<=32){
-			td->max_count = max_spinlock_count;
-		}else{
-			td->max_count = max_spinlock_count/10;
-		}
-		
+		td->max_count = max_spinlock_count;
 		td->counter = 0;
 
 		ret = sched_setscheduler(monitor_task, SCHED_FIFO, &param);
@@ -177,8 +167,6 @@ repeat:
 			atomic_set(&threads_left, i);
 			goto error_out;
 		}
-		
-		//per_cpu(percpuCount,i) = i;
 	}
 	
 	//printk("2");
@@ -193,35 +181,24 @@ repeat:
 	for(i = 0; i < test_threads; i++){
 		lu_begin_count+=per_cpu(thread_datas, i).counter;
 	}
+
 	
-	//ARM 64
 	if(test_threads==1){
-		mdelay(60);
-	}else if(test_threads > 1 && test_threads <= 4){
+		mdelay(30);
+	}else if(test_threads>10){
 		mdelay(120);
-	}else if(test_threads > 4 && test_threads <= 32){
-		mdelay(360);
-	}else {
-		mdelay(720);
+	}else{
+		mdelay(60);
 	}
 	
-	
 	kt_end_time = ktime_get();
-
 	for(i = 0; i < test_threads; i++){
 		lu_end_count+=per_cpu(thread_datas, i).counter;
 	}
 	
-	
 	for(i = 0; i < test_threads; i++){
-		if(test_threads<=32){
-			if(per_cpu(thread_datas, i).counter>max_spinlock_count)
+		if(per_cpu(thread_datas, i).counter>max_spinlock_count)
 			printk("thread %d out of range", i);
-		}else {
-			if(per_cpu(thread_datas, i).counter>max_spinlock_count/10)
-			printk("thread %d out of range", i);
-		}
-		
 	}
 	
 	lu_begin_time = ktime_to_us(kt_begin_time);

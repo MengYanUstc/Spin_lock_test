@@ -23,7 +23,7 @@ struct thread_data {
 static int threads_num = 62;
 module_param(threads_num, int, 0);
 
-static int c_time = 20;
+static int c_time = 30;
 module_param(c_time, int, 0);
 
 static int s_tests = 0;
@@ -138,14 +138,14 @@ static int snap(void *unused)
 			printk("change thread num");
 		}
 		
-		unsigned long snap_wait_time = spin_time * 5 / 1000;
+		//unsigned long snap_wait_time = spin_time * 5 / 1000;
 		
 		while (!READ_ONCE(snap_over)) {
 			if(b_pChange){
 				all_num = all_times = 0;
 				b_pChange = false;
-				snap_wait_time = spin_time * 5 / 1000;
-				mdelay(1);
+				//snap_wait_time = spin_time * 5 / 1000;
+				mdelay(10);
 			}
 			
 			num = 0;
@@ -156,7 +156,7 @@ static int snap(void *unused)
 			all_times++;
 			
 			
-			mdelay(2);
+			mdelay(5);
 		}
 
 		/* tell master to go on */
@@ -228,11 +228,11 @@ static int monitor(void *unused)
 				p_time = s_time * 1000 / p_to_s;
 				spin_time = p_time + s_time;
 				//wait time unit is us, wait 100 circulation time of spin
-				unsigned long monitor_wait_time = spin_time * 100/1000;
+				//unsigned long monitor_wait_time = spin_time * 100/1000;
 				
 				b_pChange = true;
 				
-				mdelay(40);
+				mdelay(80);
 				
 				/* print this test result */
 				printk("lockbench: %d %d %d %ld %ld %ld\n",
@@ -338,4 +338,3 @@ static __exit void lockbench_exit(void)
 module_init(lockbench_init);
 module_exit(lockbench_exit);
 MODULE_LICENSE("GPL");
-

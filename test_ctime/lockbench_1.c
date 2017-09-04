@@ -16,25 +16,29 @@
 struct thread_data {
 	int cpu;
 	struct task_struct *task;
+	long long max_count;
+	long long counter;
 };
 
 static struct spinlock test_spinlock;
 
 unsigned int test_threads = 0;
-static int threads_num = 5;
+static int threads_num = 47;
 module_param(threads_num, int, 0);
 
 ktime_t kt_begin_time, kt_end_time;
-unsigned long lu_begin_time, lu_end_time;
+long long lu_begin_time, lu_end_time;
+long long lu_begin_count, lu_end_count;
 
 static atomic_t b_ts2Change;
 
 struct percpu_counter counter_spinlock;
-long long max_spinlock_count = 10000000;
+long long max_spinlock_count = 30000000;
+
 
 static atomic_t threads_left;
 static atomic_t threads_come;
-//static DECLARE_COMPLETION(snap_start);
+static DECLARE_COMPLETION(snap_start);
 static DECLARE_COMPLETION(threads_done);
 //bool b_waitFlag = true;
 
@@ -55,45 +59,44 @@ int (*sched_setscheduler_nocheck_ptr)(struct task_struct *p, int policy,
 
 static int thread_fn(void *arg)
 {
-	/*
-	int j = 0;
-	long int circle_max_time = 1000000;
-	if (atomic_dec_and_test(&threads_come)) {
+	struct thread_data *td = (struct thread_data *)arg;
 	
-		//printk("complete");
+	/*
+	if (atomic_dec_and_test(&threads_come)) {
+		percpu_counter_set(&counter_spinlock, 0);
+		printk("last thread enter, counter: %lld", counter_spinlock.count);
+		kt_begin_time = ktime_get();
+	}*/
+	if (atomic_dec_and_test(&threads_come)) {
 		complete(&snap_start);
 	}
-	printk("3");
 	
-	for(j=0;j<circle_max_time;j++){
-		if(b_waitFlag==false)
-			break;
-	}
-	printk("%ld, %d", j, b_waitFlag);
-	*/
-	if (atomic_dec_and_test(&threads_come)) {
-		printk("last thread enter");
-	}
-	//success_count = 0;
-	percpu_counter_set(&counter_spinlock, 0);
-	//do_gettimeofday(&ts_1);
-	kt_begin_time = ktime_get();
 	while (1) {
 		spin_lock(&test_spinlock);
-		//success_count++;
-		percpu_counter_inc(&counter_spinlock);
-		spin_unlock(&test_spinlock);
-		if(counter_spinlock.count>max_spinlock_count)
+		td->counter++;
+		if(td->counter > td->max_count)
 			break;
+		spin_unlock(&test_spinlock);
 	}
 	
+	
+	/*
+		percpu_counter_inc(&counter_spinlock);
+		if(counter_spinlock.count>td->max_count)
+		{
+			spin_unlock(&test_spinlock);
+			break;
+		}*/
+	
 	//printk("4");
+	/*
 	if(atomic_dec_and_test(&b_ts2Change)){
 		kt_end_time = ktime_get();
 		lu_begin_time = ktime_to_us(kt_begin_time);
 		lu_end_time = ktime_to_us(kt_end_time);
-		printk("cores: %d kt_start: %lu kt_end: %lu count: %lld", test_threads, lu_begin_time, lu_end_time, counter_spinlock.count);
+		printk("cores: %d kt_start: %lld kt_end: %lld count: %lld", test_threads, lu_begin_time, lu_end_time, counter_spinlock.count);
 	}
+	*/
 
 	
 	//printk("5");
@@ -108,16 +111,13 @@ static int thread_fn(void *arg)
 	return 0;
 }
 
-
-/*static int snap(void *unused)
+/*
+static int snap(void *unused)
 {
 	int i;
 	unsigned int num;
 	
-	
 	wait_for_completion(&snap_start);
-	do_gettimeofday(&ts_1);
-	
 	printk("start snap");
 	
 	
@@ -159,13 +159,16 @@ static int monitor(void *unused)
 	}
 	
 repeat:
-	//reinit_completion(&snap_start);
+	reinit_completion(&snap_start);
 	reinit_completion(&threads_done);
 	//b_waitFlag = true;
 	percpu_counter_set(&counter_spinlock, 0);
 	
 	spin_lock_init(&test_spinlock);
 	test_threads++;
+	
+	lu_begin_count = 0;
+	lu_end_count = 0;
 	//success_count = 0;
 	
 	atomic_set(&threads_left, test_threads);
@@ -184,7 +187,9 @@ repeat:
 		kthread_bind(td->task, i);
 
 		td->cpu = i;
-
+		td->max_count = max_spinlock_count;
+		td->counter = 0;
+		
 		ret = sched_setscheduler(monitor_task, SCHED_FIFO, &param);
 		if (ret) {
 			ret = 1;
@@ -200,7 +205,27 @@ repeat:
 		wake_up_process(td->task);
 	}
 
-
+	wait_for_completion(&snap_start);
+	for(i = 0; i < test_threads; i++){
+		lu_begin_count+=per_cpu(thread_datas, i).counter;
+	}
+	kt_begin_time = ktime_get();
+	//mdelay(20000);
+	
+	//for(i = 0; i < test_threads; i++){
+		//td = &per_cpu(thread_datas, i);
+		//kthread_stop(per_cpu(thread_datas, i).task);
+	//}
+	
+	for(i = 0; i < test_threads; i++){
+		lu_end_count+=per_cpu(thread_datas, i).counter;
+	}
+	kt_end_time = ktime_get();
+	
+	lu_begin_time = ktime_to_us(kt_begin_time);
+	lu_end_time = ktime_to_us(kt_end_time);
+	
+	printk("cores: %d kt_start: %lld kt_end: %lld begin_count: %lld end_count: %lld", test_threads, lu_begin_time, lu_end_time, lu_begin_count, lu_end_count);
 	//wait_for_completion(&snap_start);
 	//b_waitFlag=false;
 	//printk("wait flag change %d",b_waitFlag);
