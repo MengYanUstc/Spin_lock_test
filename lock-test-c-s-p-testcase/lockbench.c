@@ -23,7 +23,7 @@ struct thread_data {
 static int threads_num = 62;
 module_param(threads_num, int, 0);
 
-static int c_time = 75;
+static int c_time = 600;
 module_param(c_time, int, 0);
 
 static int s_tests = 0;
@@ -156,7 +156,7 @@ static int snap(void *unused)
 			all_times++;
 			
 			
-			mdelay(5);
+			mdelay(10);
 		}
 
 		/* tell master to go on */
@@ -232,7 +232,7 @@ static int monitor(void *unused)
 				
 				b_pChange = true;
 				
-				mdelay(80);
+				mdelay(200);
 				
 				/* print this test result */
 				printk("lockbench: %d %d %d %ld %ld %ld\n",

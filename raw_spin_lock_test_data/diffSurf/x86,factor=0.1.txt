@@ -1,0 +1,8 @@
+c=5,s=50,stdDiff=7.26617,meanDiff=6.53625
+c=10,s=100,stdDiff=4.15497,meanDiff=2.2885
+c=15,s=150,stdDiff=2.99295,meanDiff=0.499016
+c=20,s=200,stdDiff=3.24415,meanDiff=-1.12679
+c=25,s=250,stdDiff=3.24415,meanDiff=-1.12679
+c=30,s=300,stdDiff=4.65376,meanDiff=-2.28415
+c=35,s=350,stdDiff=5.42938,meanDiff=-2.74292
+c=40,s=400,stdDiff=5.49941,meanDiff=-2.78394
