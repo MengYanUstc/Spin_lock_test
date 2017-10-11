@@ -23,7 +23,7 @@ struct thread_data {
 static int threads_num = 62;
 module_param(threads_num, int, 0);
 
-static int c_time = 600;
+static int c_time = 50;
 module_param(c_time, int, 0);
 
 static int s_tests = 0;
